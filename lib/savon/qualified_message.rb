@@ -20,12 +20,10 @@ module Savon
           newhash.merge(key => value)
         elsif key == :attributes!
           newhash.merge(key => value.inject({}) do |h, (key, value)|
-            translated_key = Gyoku.xml_tag(key, :key_converter => @key_converter).to_s
-            namespace_path = path + [translated_key]
-            namespace = @used_namespaces[namespace_path]
-            h["#{namespace.blank? ? '' : namespace + ":"}#{translated_key}"] = value
-            h
+            h.merge(add_namespace_to_key(key, path) => value) 
           end)
+        elsif key == :content!
+          newhash.merge(key => value)
         else
           translated_key = Gyoku.xml_tag(key, :key_converter => @key_converter).to_s
           newpath = path + [translated_key]
@@ -46,13 +44,15 @@ module Savon
 
     private
 
+    def add_namespace_to_key(key, path)
+      translated_key = Gyoku.xml_tag(key, :key_converter => @key_converter)
+      namespace_path = path + [translated_key.to_s]
+      namespace = @used_namespaces[namespace_path]
+      "#{namespace.blank? ? '' : namespace + ":"}#{translated_key}"
+    end
+
     def add_namespaces_to_values(values, path)
-      values.collect! { |value|
-        camelcased_value = Gyoku.xml_tag(value, :key_converter => @key_converter)
-        namespace_path = path + [camelcased_value.to_s]
-        namespace = @used_namespaces[namespace_path]
-        "#{namespace.blank? ? '' : namespace + ":"}#{camelcased_value}"
-      }
+      values.collect! { |value| add_namespace_to_key value, path }
     end
 
   end
