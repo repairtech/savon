@@ -18,6 +18,14 @@ module Savon
         if key == :order!
           add_namespaces_to_values(value, path)
           newhash.merge(key => value)
+        elsif key == :attributes!
+          newhash.merge(key => value.inject({}) do |h, (key, value)|
+            translated_key = Gyoku.xml_tag(key, :key_converter => @key_converter).to_s
+            namespace_path = path + [translated_key]
+            namespace = @used_namespaces[namespace_path]
+            h["#{namespace.blank? ? '' : namespace + ":"}#{translated_key}"] = value
+            h
+          end)
         else
           translated_key = Gyoku.xml_tag(key, :key_converter => @key_converter).to_s
           newpath = path + [translated_key]
